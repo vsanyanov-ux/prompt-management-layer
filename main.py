@@ -49,6 +49,32 @@ async def extract_meeting(text: str):
         logger.error(f"Extraction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+import subprocess
+
+@app.post("/webhook/langfuse")
+async def langfuse_webhook(data: dict):
+    """
+    Endpoint to receive Langfuse webhooks.
+    When a prompt is changed, we trigger the GitHub Actions workflow.
+    """
+    logger.info(f"Received webhook from Langfuse: {data.get('event')}")
+    
+    # Event types: prompt_created, prompt_updated
+    if data.get("event") in ["prompt_created", "prompt_updated"]:
+        prompt_name = data.get("data", {}).get("name")
+        logger.info(f"Prompt '{prompt_name}' changed. Triggering evaluation...")
+        
+        try:
+            # Trigger GitHub Actions via gh CLI (assuming local dev environment)
+            # In production, use GitHub API with a personal access token.
+            subprocess.Popen(["gh", "workflow", "run", "prompt_eval.yml"])
+            return {"status": "success", "message": "CI/CD triggered"}
+        except Exception as e:
+            logger.error(f"Failed to trigger CI/CD: {e}")
+            return {"status": "error", "message": str(e)}
+
+    return {"status": "ignored"}
+
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
