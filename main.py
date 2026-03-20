@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from langfuse import Langfuse
@@ -52,28 +52,35 @@ async def extract_meeting(text: str):
 import subprocess
 
 @app.post("/webhook/langfuse")
-async def langfuse_webhook(data: dict):
+async def langfuse_webhook(request: Request):
     """
     Endpoint to receive Langfuse webhooks.
-    When a prompt is changed, we trigger the GitHub Actions workflow.
     """
-    logger.info(f"Received webhook from Langfuse: {data.get('event')}")
-    
-    # Event types: prompt_created, prompt_updated
-    if data.get("event") in ["prompt_created", "prompt_updated"]:
-        prompt_name = data.get("data", {}).get("name")
-        logger.info(f"Prompt '{prompt_name}' changed. Triggering evaluation...")
+    try:
+        data = await request.json()
+        logger.info(f"WEBHOOK RECEIVED: {data}")
         
-        try:
-            # Trigger GitHub Actions via gh CLI (assuming local dev environment)
-            # In production, use GitHub API with a personal access token.
-            subprocess.Popen(["gh", "workflow", "run", "prompt_eval.yml"])
-            return {"status": "success", "message": "CI/CD triggered"}
-        except Exception as e:
-            logger.error(f"Failed to trigger CI/CD: {e}")
-            return {"status": "error", "message": str(e)}
+        event = data.get("event")
+        if event in ["prompt_created", "prompt_updated"]:
+            prompt_name = data.get("data", {}).get("name")
+            logger.info(f"Prompt '{prompt_name}' changed. Triggering GH Actions...")
+            
+            # Use absolute path for gh if possible, or ensure it's in PATH
+            # subprocess.Popen(["gh", "workflow", "run", "prompt_eval.yml"])
+            
+            # Alternative: use a more robust subprocess call
+            result = subprocess.run(["gh", "workflow", "run", "prompt_eval.yml"], capture_output=True, text=True)
+            if result.returncode == 0:
+                logger.info("GH Action triggered successfully")
+                return {"status": "success"}
+            else:
+                logger.error(f"GH Action trigger failed: {result.stderr}")
+                return {"status": "error", "detail": result.stderr}
 
-    return {"status": "ignored"}
+        return {"status": "ignored", "event": event}
+    except Exception as e:
+        logger.error(f"WEBHOOK ERROR: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 @app.get("/health")
 async def health():
