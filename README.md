@@ -1,4 +1,4 @@
-# 🕵️‍♂️ Data Extractor (LLMOps Prompt Layer)
+# 🕵️‍♂️ Meeting Data Extractor (LLMOps Prompt Layer)
 
 Система управления промптами, обеспечивающая независимость инструкций от программного кода, версионирование через Langfuse и автоматическое тестирование через Promptfoo.
 
