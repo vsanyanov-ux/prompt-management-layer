@@ -1,7 +1,4 @@
 prompts:
-  - id: baseline
-    raw: |
-      Extract meeting details from this text: {{text}}. Return ONLY a JSON object with fields: date, time, participants (list), platform, priority. Do not include any other text.
   - id: improved
     raw: |
       You are an expert meeting coordinator. Precisely extract meeting details from the provided text.
