@@ -5,10 +5,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def deploy_prompts():
+    host = os.getenv("LANGFUSE_HOST") or "https://us.cloud.langfuse.com"
+    print(f"Connecting to Langfuse host: {host}")
+    
     langfuse = Langfuse(
         public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
         secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
-        host=os.getenv("LANGFUSE_HOST")
+        host=host
     )
 
     prompts_to_deploy = ["rag_qa", "meeting_extraction"]
