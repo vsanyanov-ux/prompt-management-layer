@@ -1,0 +1,8 @@
+langfuse
+openai
+python-dotenv
+mistralai
+numpy
+fastapi
+uvicorn
+pydantic

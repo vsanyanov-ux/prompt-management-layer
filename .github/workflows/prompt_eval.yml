@@ -1,0 +1,42 @@
+name: Prompt Evaluation & Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  evaluate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install langfuse python-dotenv mistralai instructor numpy
+
+      - name: Run Promptfoo Evaluation
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          OPEN_AI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # MISTRAL_BASE_URL: https://api.aitunnel.ru/v1 (Can be hardcoded or secret)
+        run: npx promptfoo@latest eval --no-cache
+
+      - name: Deploy Prompts to Langfuse
+        if: success()
+        env:
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+        run: python deploy_prompts.py

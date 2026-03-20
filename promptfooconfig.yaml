@@ -1,0 +1,37 @@
+prompts:
+  - id: baseline
+    raw: |
+      Extract meeting details from this text: {{text}}. Return ONLY a JSON object with fields: date, time, participants (list), platform, priority. Do not include any other text.
+  - id: improved
+    raw: |
+      You are an expert meeting coordinator. Precisely extract meeting details from the provided text.
+      Return a valid JSON with: date, time, participants, platform, priority.
+      If priority is not explicitly mentioned, infer it (high if it's about Project X or has many people).
+      Text: {{text}}
+
+providers:
+  - id: openai:mistral-nemo
+    config:
+      apiKey: sk-aitunnel-WqOlCZV9gsiKjJdmqSFbnJQtpveH2llj
+      apiBaseUrl: https://api.aitunnel.ru/v1
+
+tests:
+  - vars:
+      text: "Завтра в 15:00 созвон с Иваном по проекту X в Zoom"
+    assert:
+      - type: icontains
+        value: "Zoom"
+      - type: javascript
+        value: "JSON.parse(output).priority.toLowerCase() === 'high'"
+
+  - vars:
+      text: "В пятницу в 10 утра встреча с Анной, Петром и Сергеем в Google Meet."
+    assert:
+      - type: javascript
+        value: "JSON.parse(output).participants.length >= 3"
+
+  - vars:
+      text: "Sync up with John tomorrow at 3pm on Slack."
+    assert:
+      - type: icontains
+        value: "Slack"
